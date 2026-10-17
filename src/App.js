@@ -1,4 +1,4 @@
-import { useEffect, useReducer } from "react";
+import { useReducer } from "react";
 import Header from "./components/Header";
 import Main from "./components/Main";
 import Loader from "./components/Utils/Loader";
@@ -9,6 +9,7 @@ import Progress from "./components/Progress";
 import FinishScreen from "./components/FinishScreen";
 import Button from "./components/Utils/Button";
 import Timer from "./components/Timer";
+import questions from "./data/questions";
 
 const QuizStatus = {
   LOADING: "LOADING",
@@ -33,29 +34,21 @@ export const Action = {
 };
 
 const initialState = {
-  questions: [],
-  status: QuizStatus.LOADING,
+  questions: questions,
+  status: QuizStatus.READY,
   index: 0,
   answer: null,
   points: 0,
   highscore: 0,
   totalTime: null,
-  numQuestionsToAnswer: null,
-  difficulty: 10,
+  numQuestionsToAnswer: questions.length,
+  difficulty: Math.min(...questions.map((a) => a.points)),
   questionsToAnswer: [],
 };
 const SECONDS_PER_QUESTION = 30;
 
 function reducer(state, action) {
   switch (action.type) {
-    case Action.DATA_RECEIVED:
-      return {
-        ...state,
-        status: QuizStatus.READY,
-        questions: action.payload,
-        numQuestionsToAnswer: action.payload.length,
-        difficulty: Math.min(...action.payload.map((a) => a.points)),
-      };
     case Action.DATA_FAILED:
       return { ...state, status: QuizStatus.ERROR };
     case Action.SELECT_DIFFICULTY:
@@ -135,24 +128,6 @@ function App() {
     },
     dispatch,
   ] = useReducer(reducer, initialState);
-
-  useEffect(() => {
-    async function fetchQuestions() {
-      try {
-        const response = await fetch("http://localhost:9000/questions");
-        if (!response.ok) {
-          throw new Error("Fetch error");
-        }
-        const data = await response.json();
-        dispatch({ type: Action.DATA_RECEIVED, payload: data });
-      } catch (error) {
-        console.log(error);
-        dispatch({ type: Action.DATA_FAILED });
-      }
-    }
-
-    fetchQuestions();
-  }, []);
 
   const questionsToAnswer = questions
     .filter((question) => question.points >= difficulty)
